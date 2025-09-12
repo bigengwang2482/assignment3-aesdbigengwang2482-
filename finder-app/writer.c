@@ -1,8 +1,7 @@
 // This is a file for using file IO written in C
 #include <stdio.h>
 #include <string.h>
-
-#define MAX_STRING_LENGTH 100
+#include <syslog.h>
 
 char *assign_string(char *src) {
 	size_t src_len = strlen(src);
@@ -19,6 +18,10 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+	// Set up the syslog
+	openlog(NULL, 0, LOG_USER);
+	
+	// Taking the inputs
 	char *writefile = assign_string(argv[1]);
 	char *writestr = assign_string(argv[2]);
 
@@ -29,6 +32,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	// Write the string to the file
+	syslog(LOG_DEBUG, "Writing %s to file %s", writestr, writefile);
 	fprintf(file, "%s", writestr);
 
 	// Close the file
