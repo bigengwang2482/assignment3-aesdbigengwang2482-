@@ -10,6 +10,9 @@ if [ -z "${writefile}" ] || [ -z "${writestr}" ]; then
 fi
 
 
+echo "Try to make the path if it doesn't exist"
+mkdir -p "$(dirname "$writefile")"
+
 if ls "${writefile}" > /dev/null 2>&1; then
 	echo "File exists."
 else
@@ -19,6 +22,7 @@ else
 		exit 1
 	fi
 fi
+
 
 echo "Writing string ${writestr} to file ${writefile}"
 
