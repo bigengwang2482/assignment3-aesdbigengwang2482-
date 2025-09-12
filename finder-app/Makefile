@@ -1,5 +1,15 @@
 # Compiler and flags
-CC=gcc
+
+# Check cross compile
+
+CROSS_COMPILE?=
+
+ifeq ($(CROSS_COMPILE),)
+	CC=gcc
+else
+	CC=$(CROSS_COMPILE)gcc
+endif
+
 CFLAGS=-Wall
 
 # Target executable
@@ -10,6 +20,7 @@ SOURCES=writer.c
 
 # Object files
 OBJECTS=$(SOURCES:.c=.o)
+
 
 # Default target
 all: $(TARGET)
