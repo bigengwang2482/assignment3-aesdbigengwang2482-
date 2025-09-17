@@ -139,7 +139,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	    close(STDERR_FILENO);
 	    // do it
 	    execv(command[0], &command[1]);
-	    perror("execv failed.") // If execv fails
+	    perror("execv failed."); // If execv fails
 	    exit(1);
     } else {
 	    // I'ms the parent
