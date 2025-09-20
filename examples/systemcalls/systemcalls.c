@@ -71,15 +71,37 @@ bool do_exec(int count, ...)
 	    exit(1);
     }
 
+	int status;
     // execute for child or wait for parent
     if (pid == 0) {
 	    // I'm the child
 	    execv(command[0], command);
-	    perror("execv failed."); // If execv fails
-	    exit(1);
+	    perror("execv failed.");
+		return false; 
+	    //exit(1);
     } else {
 	    // I'ms the parent
-	    wait(&pid);
+	    pid_t child_pid = waitpid(pid, &status, 0); // get info about child status
+		if (child_pid == -1) {
+			printf("Child pid %d failed. \n", child_pid);
+			return false;
+		}
+		if (WIFEXITED(status) == 0) {
+			// If exited normally
+			if (WEXITSTATUS(status) == 0) {
+				printf("The child procss executed succesfully. \n");
+				return true;
+			} else {
+				printf("The child process exited with a non-zero status: %d \n", WEXITSTATUS(status));
+				return false;
+			}	
+		} else {
+			printf("The child process is not returning properly. \n");
+			if (WIFSIGNALED(status)) {
+				printf("The child process is terminated by signal: %d. \n", WIFSIGNALED(status));	
+			}
+			return false;
+		}
     }
 
     va_end(args);
