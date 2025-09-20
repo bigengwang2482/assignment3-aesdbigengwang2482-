@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -134,27 +135,54 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */ 
 	// Use the last command to hold the redirect info
-	const int tail_size = 100;
-	printf("DEBUGGING: outputfile is: %s \n", outputfile);	
-	command[count] = (char *)malloc(tail_size * sizeof(char)); // alloc mem first
-	sprintf(command[count], " > %s", outputfile);
-	printf("DEBUGGING: out command is %s \n", command[count]); 
-    pid_t pid = fork(); // Use fork to create a child process, with pid holding the status
+	//const int tail_size = 100;
+	//printf("DEBUGGING: outputfile is: %s \n", outputfile);	
+	//command[count] = (char *)malloc(tail_size * sizeof(char)); // alloc mem first
+	//sprintf(command[count], " > %s", outputfile);
+	//printf("DEBUGGING: out command is %s \n", command[count]);
+
+	// Create redirected file
+	int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);	
+	if (fd < 0) { perror("open"); abort(); } // abort if failed openning.
+
+ 
+	pid_t pid = fork(); // Use fork to create a child process, with pid holding the status
     if (pid == -1) {
 	    perror("fork failed");
 	    exit(1);
     }
 
+	int status;
     // execute for child or wait for parent
-    if (pid == 0) { 
-	    // do it
+    if (pid == 0) {
+	    // I'm the child
+		if (dup2(fd, 1) < 0) { perror("dup2"); abort(); } // redirect stdout (1) to the file
+		close(fd); // Close the original file descriptor as it's no longer needed	
 	    execv(command[0], command);
-	    perror("execv failed."); // If execv fails
+	    perror("execv failed."); 
 	    exit(1);
     } else {
 	    // I'ms the parent
-	    wait(&pid);
-    }
+		close(fd); // Close the original file descriptor as it's no longer needed
+	    int child_pid = wait(&status); // get info about child status	
+		printf("Heard back from child pid=%d with status %d, if exited normally? %d\n", child_pid, WEXITSTATUS(status), WIFEXITED(status));
+		if (WIFEXITED(status)) { // true if exited normally
+			// If exited normally
+			if (WEXITSTATUS(status) == 0) {
+				printf("The child procss executed succesfully. \n");
+				return true;
+			} else {
+				printf("The child process exited with a non-zero status: %d \n", WEXITSTATUS(status));
+				return false;
+			}	
+		} else {
+			printf("The child process is not returning properly. \n");
+			if (WIFSIGNALED(status)) {
+				printf("The child process is terminated by signal: %d. \n", WIFSIGNALED(status));	
+			}
+			return false;
+		}
+    } 
 
     va_end(args);
 
