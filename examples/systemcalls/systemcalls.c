@@ -1,5 +1,7 @@
 #include "systemcalls.h"
-
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -72,12 +74,12 @@ bool do_exec(int count, ...)
     // execute for child or wait for parent
     if (pid == 0) {
 	    // I'm the child
-	    execv(command[0], &command[1]);
-	    perror("execv failed.") // If execv fails
+	    execv(command[0], command);
+	    perror("execv failed."); // If execv fails
 	    exit(1);
     } else {
 	    // I'ms the parent
-	    wait();
+	    wait(&pid);
     }
 
     va_end(args);
@@ -114,11 +116,11 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
     // Open the file
-    fd = open(outputfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (fd == -1) {
-	    perror("open failed");
-	    exit(1);
-    }
+    //fd = popen(outputfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    //if (fd == -1) {
+    //        perror("open failed");
+    //        exit(1);
+    //}
     pid_t pid = fork(); // Use fork to create a child process, with pid holding the status
     if (pid == -1) {
 	    perror("fork failed");
@@ -128,22 +130,22 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // execute for child or wait for parent
     if (pid == 0) {
 	    // I'm the child
-	    // Duplicate the file descriptor to STOUT_FILENO and check
-	    if (dup2(fd, STDOUT_FILENO) == -1) {
-		    perror("dup2 failed");
-		    exit(1);
-	    }
-	    close(fd);
-	    close(STDIN_FILENO); // Close these for not changing parents' stuff
-	    close(STDOUT_FILENO);
-	    close(STDERR_FILENO);
+	    //// Duplicate the file descriptor to STOUT_FILENO and check
+	    //if (dup2(fd, STDOUT_FILENO) == -1) {
+	    //        perror("dup2 failed");
+	    //        exit(1);
+	    //}
+	    //pclose(fd);
+	    //pclose(STDIN_FILENO); // Close these for not changing parents' stuff
+	    //pclose(STDOUT_FILENO);
+	    //pclose(STDERR_FILENO);
 	    // do it
 	    execv(command[0], &command[1]);
 	    perror("execv failed."); // If execv fails
 	    exit(1);
     } else {
 	    // I'ms the parent
-	    wait();
+	    wait(&pid);
     }
 
     va_end(args);
