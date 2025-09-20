@@ -76,17 +76,13 @@ bool do_exec(int count, ...)
     if (pid == 0) {
 	    // I'm the child
 	    execv(command[0], command);
-	    perror("execv failed.");
-		return false; 
-	    //exit(1);
+	    perror("execv failed."); 
+	    exit(1);
     } else {
 	    // I'ms the parent
-	    pid_t child_pid = waitpid(pid, &status, 0); // get info about child status
-		if (child_pid == -1) {
-			printf("Child pid %d failed. \n", child_pid);
-			return false;
-		}
-		if (WIFEXITED(status) == 0) {
+	    int child_pid = wait(&status); // get info about child status	
+		printf("Heard back from child pid=%d with status %d, if exited normally? %d\n", child_pid, WEXITSTATUS(status), WIFEXITED(status));
+		if (WIFEXITED(status)) { // true if exited normally
 			// If exited normally
 			if (WEXITSTATUS(status) == 0) {
 				printf("The child procss executed succesfully. \n");
