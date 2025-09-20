@@ -114,13 +114,13 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   redirect standard out to a file specified by outputfile.
  *   The rest of the behaviour is same as do_exec()
  *
-*/
-    // Open the file
-    //fd = popen(outputfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    //if (fd == -1) {
-    //        perror("open failed");
-    //        exit(1);
-    //}
+*/ 
+	// Use the last command to hold the redirect info
+	const int tail_size = 100;
+	printf("DEBUGGING: outputfile is: %s \n", outputfile);	
+	command[count] = (char *)malloc(tail_size * sizeof(char)); // alloc mem first
+	sprintf(command[count], " > %s", outputfile);
+	printf("DEBUGGING: out command is %s \n", command[count]); 
     pid_t pid = fork(); // Use fork to create a child process, with pid holding the status
     if (pid == -1) {
 	    perror("fork failed");
@@ -128,19 +128,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     }
 
     // execute for child or wait for parent
-    if (pid == 0) {
-	    // I'm the child
-	    //// Duplicate the file descriptor to STOUT_FILENO and check
-	    //if (dup2(fd, STDOUT_FILENO) == -1) {
-	    //        perror("dup2 failed");
-	    //        exit(1);
-	    //}
-	    //pclose(fd);
-	    //pclose(STDIN_FILENO); // Close these for not changing parents' stuff
-	    //pclose(STDOUT_FILENO);
-	    //pclose(STDERR_FILENO);
+    if (pid == 0) { 
 	    // do it
-	    execv(command[0], &command[1]);
+	    execv(command[0], command);
 	    perror("execv failed."); // If execv fails
 	    exit(1);
     } else {
