@@ -40,6 +40,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 	make -j4 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} all # build the kernel image for booting with QEMU
 	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules, skip according to instruction
 	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
+	# DONE!
 fi
 
 echo "Adding the Image in outdir"
@@ -58,7 +59,7 @@ cd ${OUTDIR}/rootfs
 mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir -p usr/bin usr/lib usr/sbin
 mkdir -p var/log
-# DONE
+# DONE!
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
 then
@@ -68,6 +69,7 @@ git clone git://busybox.net/busybox.git
     # TODO:  Configure busybox	
 	make distclean
 	make defconfig
+	# DONE!
 else
     cd busybox
 fi
@@ -76,13 +78,20 @@ fi
 # Now we are in the busybox folder
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
+cd ${OUTDIR}/rootfs # go to rootfs to check the dependencies use the installed busybox
 # DONE!
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
-## TODO: Add library dependencies to rootfs
-#
+# TODO: Add library dependencies to rootfs
+sysroot_path=$(${CROSS_COMPILE}gcc -print-sysroot)
+echo ${sysroot_path}
+cp ${sysroot_path}/lib/ld-linux-aarch64.so.1 lib64/
+cp ${sysroot_path}/lib64/libm.so.6 lib64/
+cp ${sysroot_path}/lib64/libresolv.so.2 lib64/
+cp ${sysroot_path}/lib64/libc.so.6 lib64/
+# DONE!
 ## TODO: Make device nodes
 #
 ## TODO: Clean and build the writer utility
