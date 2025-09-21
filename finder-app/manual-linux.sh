@@ -38,8 +38,8 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} mrproper # deep clean
 	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} defconfig # do the configure
 	make -j4 ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} all # build the kernel image for booting with QEMU
-	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules
-	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
+	# make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules, skip according to instruction
+	# make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
 fi
 
 #echo "Adding the Image in outdir"
