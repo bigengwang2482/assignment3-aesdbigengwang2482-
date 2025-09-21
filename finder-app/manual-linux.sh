@@ -35,42 +35,52 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     git checkout ${KERNEL_VERSION}
 
     # TODO: Add your kernel build steps here
-	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} mrproper # deep clean
-	make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} defconfig # do the configure
-	make -j4 ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} all # build the kernel image for booting with QEMU
-	# make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules, skip according to instruction
-	# make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
+	make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} mrproper # deep clean
+	make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} defconfig # do the configure
+	make -j4 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} all # build the kernel image for booting with QEMU
+	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules, skip according to instruction
+	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
 fi
 
-#echo "Adding the Image in outdir"
-#
-#echo "Creating the staging directory for the root filesystem"
-#cd "$OUTDIR"
-#if [ -d "${OUTDIR}/rootfs" ]
-#then
-#	echo "Deleting rootfs directory at ${OUTDIR}/rootfs and starting over"
-#    sudo rm  -rf ${OUTDIR}/rootfs
-#fi
-#
-## TODO: Create necessary base directories
-#
-#cd "$OUTDIR"
-#if [ ! -d "${OUTDIR}/busybox" ]
-#then
-#git clone git://busybox.net/busybox.git
-#    cd busybox
-#    git checkout ${BUSYBOX_VERSION}
-#    # TODO:  Configure busybox
-#else
-#    cd busybox
-#fi
-#
-## TODO: Make and install busybox
-#
-#echo "Library dependencies"
-#${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
-#${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
-#
+echo "Adding the Image in outdir"
+
+echo "Creating the staging directory for the root filesystem"
+cd "$OUTDIR"
+if [ -d "${OUTDIR}/rootfs" ]
+then
+	echo "Deleting rootfs directory at ${OUTDIR}/rootfs and starting over"
+    sudo rm  -rf ${OUTDIR}/rootfs
+fi
+
+# TODO: Create necessary base directories
+mkdir ${OUTDIR}/rootfs
+cd ${OUTDIR}/rootfs
+mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
+mkdir -p usr/bin usr/lib usr/sbin
+mkdir -p var/log
+# DONE
+cd "$OUTDIR"
+if [ ! -d "${OUTDIR}/busybox" ]
+then
+git clone git://busybox.net/busybox.git
+    cd busybox
+    git checkout ${BUSYBOX_VERSION}
+    # TODO:  Configure busybox	
+	make distclean
+	make defconfig
+else
+    cd busybox
+fi
+
+# TODO: Make and install busybox
+# Now we are in the busybox folder
+make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
+make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
+# DONE!
+echo "Library dependencies"
+${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
+${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
+
 ## TODO: Add library dependencies to rootfs
 #
 ## TODO: Make device nodes
