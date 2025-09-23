@@ -92,13 +92,25 @@ cp ${sysroot_path}/lib64/libm.so.6 lib64/
 cp ${sysroot_path}/lib64/libresolv.so.2 lib64/
 cp ${sysroot_path}/lib64/libc.so.6 lib64/
 # DONE!
-## TODO: Make device nodes
-#
-## TODO: Clean and build the writer utility
-#
-## TODO: Copy the finder related scripts and executables to the /home directory
-## on the target rootfs
-#
-## TODO: Chown the root directory
-#
-## TODO: Create initramfs.cpio.gz
+# TODO: Make device nodes
+sudo mknod -m 666 dev/null c 1 3
+sudo mknod -m 666 dev/console c 5 1
+# TODO: Clean and build the writer utility
+# Use the Makefile in this folder for writer utility
+cd - # get back to the compiling folder
+make clean # clean
+make all CROSS_COMPILE=${CROSS_COMPILE} # use CROSS_COMPILE variable and make target all
+# DONE!
+# TODO: Copy the finder related scripts and executables to the /home directory
+# on the target rootfs
+cp finder.sh ${OUTDIR}/rootfs/home/
+cp -r conf ${OUTDIR}/rootfs/home/
+cp finder-test.sh ${OUTDIR}/rootfs/home/
+cp autorun-qemu.sh ${OUTDIR}/rootfs/home/
+
+# TODO: Chown the root directory
+sudo chown -R root:root ${OUTDIR}/rootfs
+# TODO: Create initramfs.cpio.gz
+cd "${OUTDIR}/rootfs"
+find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
+gzip -f initramfs.cpio
