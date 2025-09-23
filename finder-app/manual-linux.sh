@@ -4,7 +4,7 @@
 
 set -e
 set -u
-
+BUILD_PATH=$(pwd -P)
 OUTDIR=/tmp/aeld
 KERNEL_REPO=git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 KERNEL_VERSION=v5.15.163
@@ -78,7 +78,7 @@ fi
 # Now we are in the busybox folder
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
-cd ${OUTDIR}/rootfs # go to rootfs to check the dependencies use the installed busybox
+d ${OUTDIR}/rootfs # go to rootfs to check the dependencies use the installed busybox
 # DONE!
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
@@ -97,14 +97,15 @@ sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 666 dev/console c 5 1
 # TODO: Clean and build the writer utility
 # Use the Makefile in this folder for writer utility
-cd - # get back to the compiling folder
+cd ${BUILD_PATH} # get back to the compiling folder
+pwd -P
 make clean # clean
 make all CROSS_COMPILE=${CROSS_COMPILE} # use CROSS_COMPILE variable and make target all
 # DONE!
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cp finder.sh ${OUTDIR}/rootfs/home/
-cp -r conf ${OUTDIR}/rootfs/home/
+cp -r ../conf ${OUTDIR}/rootfs/home/
 cp finder-test.sh ${OUTDIR}/rootfs/home/
 cp autorun-qemu.sh ${OUTDIR}/rootfs/home/
 
@@ -113,4 +114,5 @@ sudo chown -R root:root ${OUTDIR}/rootfs
 # TODO: Create initramfs.cpio.gz
 cd "${OUTDIR}/rootfs"
 find . | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
+cd ${OUTDIR}
 gzip -f initramfs.cpio
