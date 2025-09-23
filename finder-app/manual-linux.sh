@@ -78,7 +78,7 @@ fi
 # Now we are in the busybox folder
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
-d ${OUTDIR}/rootfs # go to rootfs to check the dependencies use the installed busybox
+cd ${OUTDIR}/rootfs # go to rootfs to check the dependencies use the installed busybox
 # DONE!
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
@@ -87,8 +87,8 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 sysroot_path=$(${CROSS_COMPILE}gcc -print-sysroot)
 echo ${sysroot_path}
-cp ${sysroot_path}/lib/ld-linux-aarch64.so.1 lib64/
-cp ${sysroot_path}/lib64/libm.so.6 lib64/
+cp ${sysroot_path}/lib/ld-linux-aarch64.so.1 lib/ # copy the interpreter to lib
+cp ${sysroot_path}/lib64/libm.so.6 lib64/ 
 cp ${sysroot_path}/lib64/libresolv.so.2 lib64/
 cp ${sysroot_path}/lib64/libc.so.6 lib64/
 # DONE!
