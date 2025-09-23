@@ -104,6 +104,7 @@ make all CROSS_COMPILE=${CROSS_COMPILE} # use CROSS_COMPILE variable and make ta
 # DONE!
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
+cp writer ${OUTDIR}/rootfs/home/ # copy writer to the file system as well 
 cp finder.sh ${OUTDIR}/rootfs/home/
 cp -r ../conf ${OUTDIR}/rootfs/home/
 cp finder-test.sh ${OUTDIR}/rootfs/home/
