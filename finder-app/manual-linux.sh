@@ -39,7 +39,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 	make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} defconfig # do the configure
 	make -j4 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} all # build the kernel image for booting with QEMU
 	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} modules # build any kernel modules, skip according to instruction
-	# make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
+	make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} dtbs # build the device tree
 	# DONE!
 fi
 
