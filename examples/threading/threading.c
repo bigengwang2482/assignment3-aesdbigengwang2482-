@@ -47,6 +47,7 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
 	// Step 1 allocate memory for thread_data
 	struct thread_data* thrd_data = (struct thread_data*) malloc(sizeof(struct thread_data));
 	// Step 2 setup mutex and wait arguments
+	thrd_data->thread = thread;
 	thrd_data->mutex = mutex;
 	thrd_data->wait_to_obtain_ms = wait_to_obtain_ms;
 	thrd_data->wait_to_release_ms = wait_to_release_ms;
