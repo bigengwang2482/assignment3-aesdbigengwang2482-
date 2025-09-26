@@ -15,13 +15,13 @@ void* threadfunc(void* thread_param)
     // hint: use a cast like the one below to obtain thread arguments from your parameter
     //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
 	struct thread_data* thread_func_args = (struct thread_data *) thread_param; // cast input thread_param pointer to a thread_data type
-	usleep(thread_func_args->wait_to_obtain_ms);
+	usleep(thread_func_args->wait_to_obtain_ms*1000); //usleep is for micro second not milisecond
 	//DEBUG_LOG("Waited %d ms BEFORE OBTAINING THE LOCKED MUTEX from arg. \n", thread_func_args->wait_to_obtain_ms);
 	
 	// get the locked mutex from arg for unlock later
 	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
 	//	
-	usleep(thread_func_args->wait_to_release_ms);
+	usleep(thread_func_args->wait_to_release_ms*1000);
 	pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work 	
     return thread_param;
 }
@@ -43,23 +43,23 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
 	thrd_data->mutex = mutex;
 	thrd_data->wait_to_obtain_ms = wait_to_obtain_ms;
 	thrd_data->wait_to_release_ms = wait_to_release_ms;
-	// pass thread_data to created thread using threadfunc() as entry point.
-	printf("Start pthread_create from main thread. \n");	
+	// pass thread_data to created thread using threadfunc() as entry point.	
 	int rc = pthread_create(thread, NULL, threadfunc, thrd_data);
-	//if (rc != 0) {
-	//	ERROR_LOG("pthread_create failed with %d. \n", rc);	
-	//}
-	//rc = pthread_join(*thread,  NULL); // waiting for the thread to end
-	if (rc != 0) {
-		ERROR_LOG("Attempt to pthread_join thread %lu failed with %d. \n", *thread, rc);
-		return false;	
-	} 
-	else {
-		return true;
-	}
-	
-	// return true if successful
 
-    return false;
+	if (rc != 0) {
+		thrd_data->thread_complete_success=false;
+	}	else {
+		thrd_data->thread_complete_success=true;
+	}	
+	return thrd_data->thread_complete_success;	
+	// return true if successful
+	//if (rc != 0) {
+	//	ERROR_LOG("Attempt to pthread_create thread %lu failed with %d. \n", *thread, rc);
+	//	return false;	
+	//} 
+	//else {
+	//	return true;
+	//}
+    //return false;
 }
 
