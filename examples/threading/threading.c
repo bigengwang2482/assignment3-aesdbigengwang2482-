@@ -15,11 +15,12 @@ void* threadfunc(void* thread_param)
     // hint: use a cast like the one below to obtain thread arguments from your parameter
     //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
 	struct thread_data* thread_func_args = (struct thread_data *) thread_param; // cast input thread_param pointer to a thread_data type
-	usleep(thread_func_args->wait_to_obtain_ms*1000); //usleep is for micro second not milisecond
+	usleep(thread_func_args->wait_to_obtain_ms*1000); //usleep is for micro second not milisecond	
 	//DEBUG_LOG("Waited %d ms BEFORE OBTAINING THE LOCKED MUTEX from arg. \n", thread_func_args->wait_to_obtain_ms);
 	
 	// get the locked mutex from arg for unlock later
 	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
+	pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
 	//	
 	usleep(thread_func_args->wait_to_release_ms*1000);
 	pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work 	
