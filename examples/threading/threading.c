@@ -4,8 +4,8 @@
 #include <stdio.h>
 
 // Optional: use these functions to add debug or error prints to your application
-#define DEBUG_LOG(msg,...)
-//#define DEBUG_LOG(msg,...) printf("threading: " msg "\n" , ##__VA_ARGS__)
+//#define DEBUG_LOG(msg,...)
+#define DEBUG_LOG(msg,...) printf("threading: " msg "\n" , ##__VA_ARGS__)
 #define ERROR_LOG(msg,...) printf("threading ERROR: " msg "\n" , ##__VA_ARGS__)
 
 void* threadfunc(void* thread_param)
@@ -16,20 +16,13 @@ void* threadfunc(void* thread_param)
     //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
 	struct thread_data* thread_func_args = (struct thread_data *) thread_param; // cast input thread_param pointer to a thread_data type
 	usleep(thread_func_args->wait_to_obtain_ms);
-	int rc = pthread_mutex_lock(thread_func_args->mutex); // create a mutex lock 
-	if (rc != 0) {
-		printf("pthread_mutex_lock failed with %d\n", rc);
-		thread_func_args->thread_complete_success = false;
-	} else {
-		usleep(thread_func_args->wait_to_release_ms);
-		rc = pthread_mutex_unlock(thread_func_args->mutex); // release mutex lock so other threads may work 
-		if (rc != 0 ) {
-			printf("pthread_mutex_unlock failed with %d\n", rc);
-			thread_func_args->thread_complete_success = false;
-		} else {
-			thread_func_args->thread_complete_success = true;
-		}
-	}	
+	//DEBUG_LOG("Waited %d ms BEFORE OBTAINING THE LOCKED MUTEX from arg. \n", thread_func_args->wait_to_obtain_ms);
+	
+	// get the locked mutex from arg for unlock later
+	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
+	//	
+	usleep(thread_func_args->wait_to_release_ms);
+	pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work 	
     return thread_param;
 }
 
@@ -51,10 +44,20 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
 	thrd_data->wait_to_obtain_ms = wait_to_obtain_ms;
 	thrd_data->wait_to_release_ms = wait_to_release_ms;
 	// pass thread_data to created thread using threadfunc() as entry point.
-	pthread_create(thread, NULL, threadfunc, thrd_data);
-	if (thrd_data->thread_complete_success) {
+	printf("Start pthread_create from main thread. \n");	
+	int rc = pthread_create(thread, NULL, threadfunc, thrd_data);
+	//if (rc != 0) {
+	//	ERROR_LOG("pthread_create failed with %d. \n", rc);	
+	//}
+	//rc = pthread_join(*thread,  NULL); // waiting for the thread to end
+	if (rc != 0) {
+		ERROR_LOG("Attempt to pthread_join thread %lu failed with %d. \n", *thread, rc);
+		return false;	
+	} 
+	else {
 		return true;
 	}
+	
 	// return true if successful
 
     return false;
