@@ -64,7 +64,7 @@ OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 rm -rf /tmp/aeld-data
 
 # write to tmp result for check assignment4
-echo ${OUTPUTSTRING} > /tmp/assignment4-result.txt 
+echo ${OUTPUTSTRING} 2>&1 > /tmp/assignment4-result.txt 
 
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
