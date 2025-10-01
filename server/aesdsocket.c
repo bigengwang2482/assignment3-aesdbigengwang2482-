@@ -9,6 +9,9 @@
 
 
 int main(int argc, char* argv[]) {
+	// Set up the syslog
+	openlog(NULL, 0, LOG_USER);
+
 	// Initialize the socket
 	int server_fd; // the server socket file descriptor
 
@@ -37,8 +40,12 @@ int main(int argc, char* argv[]) {
 	struct sockaddr client_addr;	
 	socklen_t addrlen = sizeof(struct sockaddr);
 	int acceptedfd; // TODO: return -1 if any of the connect steps fail
-	acceptedfd = accept(server_fd, &client_addr, &addrlen); // Use accpt_fd to read and write for our socket	
+	acceptedfd = accept(server_fd, &client_addr, &addrlen); // Use accpt_fd to read and write for our socket
+	if (acceptedfd < 0) {
+		return -1;
+	}	
 	// TODO: Logs message to the syslog
+	syslog(LOG_DEBUG, "Accepted connection from %s", client_addr.sa_data);
 
 	// Once the connection is done, do recv and send using acceptedfd
 	// use /var/tmp/aesdsocketdata as the buffer
@@ -50,12 +57,38 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 		
-	size_t buffer_len=15;
+	size_t buffer_len=100000;
 	char* bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 	recv(acceptedfd, bytes_buffer, buffer_len, 0);
-	send(acceptedfd, bytes_buffer, buffer_len, 0);
-	
+	// write the packet to file
+	fprintf(file, "%s", bytes_buffer);
+	fclose(file);
+	free(bytes_buffer);
 
-	fclose(file);	
+	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
+	
+	file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
+	if (fseek(file,0, SEEK_END)	 != 0) {
+		fclose(file);
+		return -1;
+	}
+	
+	long file_size = ftell(file);
+	if (file_size == -1) {
+		fclose(file);
+		return -1;
+	}
+	buffer_len = file_size + 1;
+	bytes_buffer = (char*) malloc(sizeof(char) * buffer_len);
+	fseek(file, 0, SEEK_SET);
+	fread(bytes_buffer, sizeof(char), file_size, file);
+	bytes_buffer[file_size] = '\0';
+	fclose(file);
+	
+	// Send the buffer to client
+	send(acceptedfd, bytes_buffer, buffer_len, 0);
+		
+	syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
+
 	return 0;
 }
