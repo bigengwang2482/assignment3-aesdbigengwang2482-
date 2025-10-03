@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 	
 		
 			
-		size_t buffer_len=1000000; // 1000000000; too large	
+		size_t buffer_len=100000000;// 1000000000; too large	
 		bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 		recv(acceptedfd, bytes_buffer, buffer_len, 0);	
 	
@@ -130,11 +130,11 @@ int main(int argc, char* argv[]) {
 		}
 		else {
 			while (line_break != NULL) {
-				size_t packet_size;
-				packet_size = (line_break - packet_head) / sizeof(char) + 1;
-				printf("Found breakline, Get packet_size %ld \n", packet_size);
+				//size_t packet_size;
+				//packet_size = (line_break - packet_head) / sizeof(char) + 1;
+				//printf("Found breakline, Get packet_size %ld \n", packet_size);
 				//line_break[0]='\0'; // Replace the breakline with null
-				printf("Write %s to file \n", packet_head); 
+				//printf("Write %s to file \n", packet_head); 
 				// write the packet to file
 				file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode
 			
