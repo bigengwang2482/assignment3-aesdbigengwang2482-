@@ -11,10 +11,13 @@
 
 
 FILE* file;
-
+char* bytes_buffer;
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
-		syslog(LOG_DEBUG, "Caught signal, exiting");	
+		syslog(LOG_DEBUG, "Caught signal, exiting");
+		if (bytes_buffer != NULL) {
+			free(bytes_buffer);
+		}	
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
@@ -113,8 +116,7 @@ int main(int argc, char* argv[]) {
 	
 		
 			
-		size_t buffer_len=1000000000;
-		char* bytes_buffer;
+		size_t buffer_len=1000000; // 1000000000; too large	
 		bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 		recv(acceptedfd, bytes_buffer, buffer_len, 0);	
 	
@@ -145,8 +147,8 @@ int main(int argc, char* argv[]) {
 				packet_head = line_break +  sizeof(char);
 				line_break = strchr(packet_head, '\n');
 			}
-		}		
-		free(bytes_buffer);	
+		}	
+		
 		// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
 		
 		file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
@@ -161,14 +163,21 @@ int main(int argc, char* argv[]) {
 			return -1;
 		}
 		buffer_len = file_size;
+		if (bytes_buffer != NULL) {	
+			free(bytes_buffer);
+			bytes_buffer = NULL;	
+		}
 		bytes_buffer = (char*) malloc(sizeof(char) * buffer_len);
 		fseek(file, 0, SEEK_SET);
 		fread(bytes_buffer, sizeof(char), file_size, file);
 		fclose(file);
 						
 		// Send the buffer to client
-		send(acceptedfd, bytes_buffer, buffer_len, 0);
-		free(bytes_buffer);	
+		send(acceptedfd, bytes_buffer, buffer_len, 0);	
+		if (bytes_buffer != NULL) {	
+			free(bytes_buffer);
+			bytes_buffer = NULL;	
+		}
 		syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
 	}	
 
