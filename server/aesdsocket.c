@@ -53,17 +53,18 @@ int main(int argc, char* argv[]) {
 
 	// Use getaddrinfo to setup the addrinfo	
 	struct addrinfo* res;
-	struct addrinfo* hints;
+	struct addrinfo hints;
 
-	hints = (struct addrinfo*) malloc(sizeof(struct addrinfo));
-	hints->ai_flags = AI_PASSIVE;
+	//hints = (struct addrinfo*) malloc(sizeof(struct addrinfo));
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_socktype = SOCK_STREAM;
 	const char* node;
 	node = NULL;
 	const char service[] = "9000";
-	
-	
-	getaddrinfo(node, service, hints, &res); // WARNING, malloc happens inside for res
-	free(hints);	
+		
+	getaddrinfo(node, service, &hints, &res); // WARNING, malloc happens inside for res
+	//free(hints);	
 	// Binding here: now use the results from getaddrinfo to serve as the socket address	
 	bind(server_fd, res->ai_addr,sizeof(struct sockaddr));
 	freeaddrinfo(res); // WARNING, must have it here to free res	
