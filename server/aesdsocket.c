@@ -9,7 +9,7 @@
 #include <signal.h>
 
 
-char* bytes_buffer;
+
 FILE* file;
 
 void signal_handler(int sig) {
@@ -91,9 +91,20 @@ int main(int argc, char* argv[]) {
 	
 		
 			
-		size_t buffer_len=100000;
+		size_t buffer_len=1000000000;
+		char* bytes_buffer;
 		bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 		recv(acceptedfd, bytes_buffer, buffer_len, 0);
+		char* string_end;
+		string_end = strchr(bytes_buffer, '\0');
+		size_t stream_char_size;
+		if (string_end == NULL) {
+			printf("No string end in stream.\n");
+		}
+		else {
+			stream_char_size = (string_end - bytes_buffer) / sizeof(char);	
+			printf("Found string end, stream_char_size is %ld. \n", stream_char_size);
+		}
 		// Find the new line break
 		char* packet_head = bytes_buffer;
 		char* line_break;	
@@ -122,7 +133,7 @@ int main(int argc, char* argv[]) {
 				line_break = strchr(packet_head, '\n');
 			}
 		}		
-	
+		free(bytes_buffer);	
 		// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
 		
 		file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
@@ -141,10 +152,10 @@ int main(int argc, char* argv[]) {
 		fseek(file, 0, SEEK_SET);
 		fread(bytes_buffer, sizeof(char), file_size, file);
 		fclose(file);
-				
+						
 		// Send the buffer to client
 		send(acceptedfd, bytes_buffer, buffer_len, 0);
-			
+		free(bytes_buffer);	
 		syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
 	}	
 
