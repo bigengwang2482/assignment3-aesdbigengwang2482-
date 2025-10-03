@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 	
 		
 			
-		size_t buffer_len=100000000;// 1000000000; too large	
+		size_t buffer_len=100000;// 1000000000; too large	
 		bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 		recv(acceptedfd, bytes_buffer, buffer_len, 0);	
 	
@@ -125,29 +125,25 @@ int main(int argc, char* argv[]) {
 		char* packet_head = bytes_buffer;
 		char* line_break;	
 		line_break = strchr(bytes_buffer, '\n');
-		if (line_break == NULL) {
-			//printf("No breakline found.\n");	
+		int valid_packet = 0;
+		if (line_break != NULL) {
+			valid_packet = 1;	
 		}
-		else {
-			while (line_break != NULL) {
-				//size_t packet_size;
-				//packet_size = (line_break - packet_head) / sizeof(char) + 1;
-				//printf("Found breakline, Get packet_size %ld \n", packet_size);
-				//line_break[0]='\0'; // Replace the breakline with null
-				//printf("Write %s to file \n", packet_head); 
-				// write the packet to file
-				file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode
-			
-				if (file == NULL) {
-					perror("fopen failed");
-					return 1;
-				}	
-				fprintf(file, "%s",packet_head);
-				fclose(file);
-				// update the packet_head and line break
-				packet_head = line_break +  sizeof(char);
-				line_break = strchr(packet_head, '\n');
-			}
+		if (valid_packet) {	
+			//size_t packet_size;
+			//packet_size = (line_break - packet_head) / sizeof(char) + 1;
+			//printf("Found breakline, Get packet_size %ld \n", packet_size);
+			line_break[1]='\0'; // Replace the breakline with null
+			//printf("Write %s to file \n", packet_head); 
+			// write the packet to file
+			file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode
+		
+			if (file == NULL) {
+				perror("fopen failed");
+				return 1;
+			}	
+			fprintf(file, "%s",packet_head);
+			fclose(file);	
 		}	
 		
 		// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
