@@ -15,20 +15,7 @@ FILE* file;
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
 		syslog(LOG_DEBUG, "Caught signal, exiting");
-		printf("Received %d, cleaning up now\n", sig);
-		if (file != NULL) {
-			fclose(file);
-		}	
-		//if (bytes_buffer != NULL) {	
-		//	free(bytes_buffer);
-		//}
-		//if (res != NULL) {
-		//	freeaddrinfo(res); // WARNING, must have it here to free res
-		//}
-		//
-		//if (hints != NULL) {
-		//	free(hints);
-		//}
+		printf("Received %d, cleaning up now\n", sig);	
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
