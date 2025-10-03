@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <signal.h>
-
+#include <unistd.h>
 
 
 FILE* file;
@@ -45,6 +45,15 @@ int main(int argc, char* argv[]) {
 		perror("signal");
 		exit(1);
 	}
+
+	// Check if runnig daemon mode
+	int do_daemon = 0;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-d") == 0 ) {
+			do_daemon = 1;
+		}
+	}
+
 	// Set up the syslog
 	openlog(NULL, 0, LOG_USER);
 
@@ -70,6 +79,33 @@ int main(int argc, char* argv[]) {
 	bind(server_fd, res->ai_addr,sizeof(struct sockaddr));
 	freeaddrinfo(res); // WARNING, must have it here to free res	
 
+	if (do_daemon) {
+		pid_t pid;
+
+
+		// Create a new process for daemon
+		pid = fork();
+
+		if (pid < 0) {
+			perror("fork");
+			exit(1);
+		}
+
+		// parent exit
+		if (pid > 0) {
+			printf("Daemonized process with PID %d\n", pid);
+			exit(0);
+		}
+
+		// child proceeds here and  become the session leader
+		if (setsid() < 0) {
+			perror("setsid");
+			exit(1);
+		}
+
+	}
+	
+	//
 	// Start listening
 	listen(server_fd, 10); //temporarily set 10 as the backlog number
 
