@@ -14,8 +14,7 @@ FILE* file;
 
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
-		syslog(LOG_DEBUG, "Caught signal, exiting");
-		printf("Received %d, cleaning up now\n", sig);	
+		syslog(LOG_DEBUG, "Caught signal, exiting");	
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
@@ -117,23 +116,14 @@ int main(int argc, char* argv[]) {
 		size_t buffer_len=1000000000;
 		char* bytes_buffer;
 		bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
-		recv(acceptedfd, bytes_buffer, buffer_len, 0);
-		char* string_end;
-		string_end = strchr(bytes_buffer, '\0');
-		size_t stream_char_size;
-		if (string_end == NULL) {
-			printf("No string end in stream.\n");
-		}
-		else {
-			stream_char_size = (string_end - bytes_buffer) / sizeof(char);	
-			printf("Found string end, stream_char_size is %ld. \n", stream_char_size);
-		}
+		recv(acceptedfd, bytes_buffer, buffer_len, 0);	
+	
 		// Find the new line break
 		char* packet_head = bytes_buffer;
 		char* line_break;	
 		line_break = strchr(bytes_buffer, '\n');
 		if (line_break == NULL) {
-			printf("No breakline found.\n");	
+			//printf("No breakline found.\n");	
 		}
 		else {
 			while (line_break != NULL) {
