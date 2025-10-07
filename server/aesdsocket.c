@@ -41,8 +41,7 @@ slist_data_s* slist_add_data(slist_data_t head, slist_data_t* datap) {
 }
 
 
-bool check_all_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {
-	bool all_complete = true;
+bool check_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
 	SLIST_FOREACH(datap, &head, entries) {
 		if (datap->value == false) {
 			all_complete = false;
@@ -51,7 +50,14 @@ bool check_all_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* en
 	return all_complete;
 }
 
-
+void free_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
+	SLIST_FOREACH(datap, &head, entries) {
+		if (datap->value == true) {	
+			pthread_join(datap->thread_id); // end and free the completed thread and don't let them hang there
+			// Better alternative to detached thread
+		}
+	}
+}
 
 // Thread function for recv and send, wrapped here
 /**
@@ -269,7 +275,7 @@ int main(int argc, char* argv[]) {
 	// Create a linked list of thread status
 
 	// set a boolean for if all_threads_complete
-	bool threads_complete = false;
+	bool any_thread_complete = false;
 
 	while(1) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
@@ -277,12 +283,20 @@ int main(int argc, char* argv[]) {
 		if (acceptedfd < 0) {
 			return -1;
 		}	
-		int rc = pthread_create(thread, NULL, threadfunc, thrd_data);
-	
-		threads_complete = check_all_threads();
+		// Now a new connection has been set up
+		pthread_t thread;	
+		int rc = pthread_create(&thread, NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
-		if (threads_complete) {
-			pthread_join(); // Wait for all threads to finish
+		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
+	
+		// TODO: update this information in the thread status linked list
+		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
+		any_thread_complete = check_any_completed_threads();
+		
+		if (any_thread_complete) {
+			free_any_completed_threads();	
+		} else {
+			printf("Move on to create a new thread to accept more connections.");
 		}
 		
 	}	
