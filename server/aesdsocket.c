@@ -214,7 +214,8 @@ void* timer_threadfunc(void* thread_param)
 
 		struct tm *current_time = localtime(&now);	
 
-		if ((now - *(thread_func_args->time_start)) > TIME_STAMP_INTERVAL) { 
+		if ((now - *(thread_func_args->time_start)) == TIME_STAMP_INTERVAL) {
+			*(thread_func_args->time_start) = now;
 			pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
 				
 				
@@ -342,6 +343,19 @@ int main(int argc, char* argv[]) {
 	// Set up the mutex	
 	pthread_mutex_t mutex;
 	pthread_mutex_init(&mutex, NULL);
+
+	// start a time stamp writing thread
+	time_t time_start;
+	time(&time_start);
+	
+	// Set up thread_data
+	//struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct thread_data));	
+	//timer_thrd_data->mutex = &mutex;	
+	//timer_thrd_data->time_start = &time_start;	
+	//pthread_t timer_thread;
+	//pthread_create(&timer_thread, NULL, timer_threadfunc, timer_thrd_data); // start a timer thread
+
+
 	while(1) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
 		acceptedfd = accept(server_fd, &client_addr, &addrlen); // Use accpt_fd to read and write for our socket
