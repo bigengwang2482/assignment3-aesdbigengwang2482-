@@ -67,7 +67,8 @@ struct slist_data_s {
 FILE* file;
 char* bytes_buffer;
 char* timer_buffer;
-
+slist_data_t *datap;
+SLIST_HEAD(slisthead, slist_data_s) head;
 // Thread function for recv and send, wrapped here
 /**
  * This structure should be dynamically allocated and passed as
@@ -336,8 +337,7 @@ int main(int argc, char* argv[]) {
 	// now start more threads for dealing with recv and send	
 
 	// Create a linked list of thread status
-	slist_data_t *datap=NULL;
-	SLIST_HEAD(slisthead, slist_data_s) head;
+	datap=NULL;	
 	SLIST_INIT(&head);
 	// Set up the mutex	
 	pthread_mutex_t mutex;
