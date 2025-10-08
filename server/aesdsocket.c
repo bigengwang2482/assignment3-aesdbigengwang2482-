@@ -386,6 +386,7 @@ int main(int argc, char* argv[]) {
 		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
 		SLIST_FOREACH(datap, &head, entries) {
 			if (datap->complete) {
+				printf("Freeing thread ID: %ld\n", datap->thread_id);
 				pthread_join(datap->thread_id, NULL); // end the thread
 				SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
 				free(datap); // free the memory for the node
