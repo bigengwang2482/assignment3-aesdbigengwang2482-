@@ -91,7 +91,7 @@ struct thread_data{
 	pthread_mutex_t *mutex;
 	int acceptedfd; 		
 	bool* complete;
-		
+	sig_atomic_t* exit_threads; 	
 
     /**
      * Set to true if the thread completed with success, false
@@ -372,7 +372,7 @@ int main(int argc, char* argv[]) {
 	pthread_create(&timer_thread, NULL, timer_threadfunc, timer_thrd_data); // start a timer thread
 
 
-	while(1) {
+	while(!exit_threads) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
 		acceptedfd = accept(server_fd, &client_addr, &addrlen); // Use accpt_fd to read and write for our socket
 		if (acceptedfd < 0) {
@@ -388,6 +388,7 @@ int main(int argc, char* argv[]) {
 		thrd_data->acceptedfd = acceptedfd;
 		thrd_data->complete = &(datap->complete); 
 		thrd_data->mutex = &mutex;
+		thrd_data->exit_threads = &exit_threads;		
 		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send	
 		if (rc != 0) {
 			thrd_data->thread_complete_success=false;
