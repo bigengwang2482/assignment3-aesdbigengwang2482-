@@ -280,6 +280,10 @@ int main(int argc, char* argv[]) {
 		datap = malloc(sizeof(slist_data_t));
 		datap->complete=false; //initialize it to be not completed
 		SLIST_INSERT_HEAD(&head, datap, entries);
+		// Set up thread_data
+		thread_data* thrd_data;
+		thrd_data = (thread_data*) malloc(sizeof(thread_data));
+		thrd_data->acceptedfd = acceptedfd;
 		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
 		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
