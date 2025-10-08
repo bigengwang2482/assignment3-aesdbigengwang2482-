@@ -266,9 +266,10 @@ int main(int argc, char* argv[]) {
 	// now start more threads for dealing with recv and send	
 
 	// Create a linked list of thread status
-	SLIST_HEAD(slisthead, slist_data_t) head;
+	slist_data_t *datap=NULL;
+	SLIST_HEAD(slisthead, slist_data_s) head;
 	SLIST_INIT(&head);
-	slist_data_t *datap=NULL;	
+		
 
 	while(1) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
@@ -287,7 +288,7 @@ int main(int argc, char* argv[]) {
 		pthread_mutex_t mutex;
 		pthread_mutex_init(&mutex, NULL); 
 		thrd_data->mutex = &mutex;
-		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
+		pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
 		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
 	
@@ -296,7 +297,7 @@ int main(int argc, char* argv[]) {
 		SLIST_FOREACH(datap, &head, entries) {
 			if (datap->complete) {
 				pthread_join(datap->thread_id, NULL); // end the thread
-				SLIST_REMOVE(&head, datap, slist_data_t, entries); // remove the thread from the linked list
+				SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
 				free(datap); // free the memory for the node
 			}
 		}
