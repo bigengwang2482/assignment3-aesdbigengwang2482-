@@ -8,7 +8,9 @@
 #include <netdb.h>
 #include <signal.h>
 #include <unistd.h>
-#include <queue.h>  // Use implemented linked list
+#include <stdbool.h>
+#include <pthread.h>
+#include "queue.h"  // Use implemented linked list
 
 #define NUM_THREADS 10
 
@@ -18,47 +20,51 @@ struct slist_data_s {
 	pthread_t thread_id;
 	bool complete;
 	SLIST_ENTRY(slist_data_s) entries;
-}
+};
 
 
 
-// SLIST
+//// SLIST
+//
+//slist_data_t *thread_stat_p;
+//
+//slist_data_s* slist_create_head() {
+//
+//	SLIST_HEAD(slisthead, slist_data_s) head;
+//	SLIST_INIT(&head);	
+//	return head;
+//}
+//
+//slist_data_s* slist_add_data(slist_data_t head, slist_data_t* datap) {
+//	
+//	datap = malloc(sizeof(slist_data_t));
+//	datap->complete = true;
+//	SLIST_INSERT_HEAD(&head, datap, entries);
+//	return head;
+//}
+//
+//
+//bool check_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
+//	SLIST_FOREACH(datap, &head, entries) {
+//		if (datap->complete == false) {
+//			all_complete = false;
+//		}
+//	}
+//	return all_complete;
+//}
+//
+//void free_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
+//	SLIST_FOREACH(datap, &head, entries) {
+//		if (datap->complete == true) {	
+//			pthread_join(datap->thread_id); // end and free the completed thread and don't let them hang there
+//			// Better alternative to detached thread
+//		}
+//	}
+//}
 
-slist_data_t *thread_stat_p;
-
-slist_data_s* slist_create_head() {
-
-	SLIST_HEAD(slisthead, slist_data_s) head;
-	SLIST_INIT(&head);	
-	return head;
-}
-
-slist_data_s* slist_add_data(slist_data_t head, slist_data_t* datap) {
-	
-	datap = malloc(sizeof(slist_data_t));
-	datap->complete = true;
-	SLIST_INSERT_HEAD(&head, datap, entries);
-	return head;
-}
-
-
-bool check_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
-	SLIST_FOREACH(datap, &head, entries) {
-		if (datap->complete == false) {
-			all_complete = false;
-		}
-	}
-	return all_complete;
-}
-
-void free_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
-	SLIST_FOREACH(datap, &head, entries) {
-		if (datap->complete == true) {	
-			pthread_join(datap->thread_id); // end and free the completed thread and don't let them hang there
-			// Better alternative to detached thread
-		}
-	}
-}
+// Global variables
+FILE* file;
+char* bytes_buffer;
 
 // Thread function for recv and send, wrapped here
 /**
@@ -83,7 +89,7 @@ struct thread_data{
     bool thread_complete_success;
 };
 
-void threadfunc(void* thread_param)
+void* threadfunc(void* thread_param)
 {
 
     //// TODO: wait, obtain mutex, wait, release mutex as described by thread_data structure
@@ -92,13 +98,9 @@ void threadfunc(void* thread_param)
 	struct thread_data* thread_func_args = (struct thread_data *) thread_param; // cast input thread_param pointer to a thread_data type
 	//usleep(thread_func_args->wait_to_obtain_ms*1000); //usleep is for micro second not milisecond	
 	////DEBUG_LOG("Waited %d ms BEFORE OBTAINING THE LOCKED MUTEX from arg. \n", thread_func_args->wait_to_obtain_ms);
-	//
-	//// get the locked mutex from arg for unlock later
-	//pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
-	//pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
+	//	
 	////	
-	//usleep(thread_func_args->wait_to_release_ms*1000);
-	//pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work 	
+	//usleep(thread_func_args->wait_to_release_ms*1000); 	
 	// TODO: Logs message to the syslog
 	//syslog(LOG_DEBUG, "Accepted connection from %s", client_addr.sa_data);
 	
@@ -117,30 +119,33 @@ void threadfunc(void* thread_param)
 	if (line_break != NULL) {
 		valid_packet = 1;	
 	}
+	// get the locked mutex from arg for unlock later
+	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
+	pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
 	if (valid_packet) {		
 		line_break[1]='\0'; // Replace the breakline with null	
 		// write the packet to file
 		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
-		if (file == NULL) {
-			perror("fopen failed");
-			return 1;
-		}	
+		//if (file == NULL) {
+		//	perror("fopen failed");
+		//	return 1;
+		//}	
 		fprintf(file, "%s",packet_head);
 		fclose(file);	
 	}	
-	
+	pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
 	
 	file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
 	if (fseek(file,0, SEEK_END)	 != 0) {
 		fclose(file);
-		return -1;
+		//return -1;
 	}
 	
 	long file_size = ftell(file);
 	if (file_size == -1) {
 		fclose(file);
-		return -1;
+		//return -1;
 	}
 	buffer_len = file_size;
 	if (bytes_buffer != NULL) {	
@@ -160,11 +165,9 @@ void threadfunc(void* thread_param)
 	}
 	//syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
 	// Label the thread complete
-    //return thread_param;
+    return thread_param;
 }
 
-FILE* file;
-char* bytes_buffer;
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
 		syslog(LOG_DEBUG, "Caught signal, exiting");
@@ -263,11 +266,9 @@ int main(int argc, char* argv[]) {
 	// now start more threads for dealing with recv and send	
 
 	// Create a linked list of thread status
-	SLIST_HEAD(slisthead, slist_data_s) head;
+	SLIST_HEAD(slisthead, slist_data_t) head;
 	SLIST_INIT(&head);
-	slist_data_t *datap=NULL;
-	// set a boolean for if all_threads_complete
-	bool any_thread_complete = false;
+	slist_data_t *datap=NULL;	
 
 	while(1) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
@@ -281,19 +282,21 @@ int main(int argc, char* argv[]) {
 		datap->complete=false; //initialize it to be not completed
 		SLIST_INSERT_HEAD(&head, datap, entries);
 		// Set up thread_data
-		thread_data* thrd_data;
-		thrd_data = (thread_data*) malloc(sizeof(thread_data));
+		struct thread_data* thrd_data = (struct thread_data*) malloc(sizeof(struct thread_data));
 		thrd_data->acceptedfd = acceptedfd;
+		pthread_mutex_t mutex;
+		pthread_mutex_init(&mutex, NULL); 
+		thrd_data->mutex = &mutex;
 		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
 		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
 	
 		// TODO: update this information in the thread status linked list
 		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
-		SLIST_FOREACH_SAFE(datap, &head, entries) {
+		SLIST_FOREACH(datap, &head, entries) {
 			if (datap->complete) {
-				pthread_join(datap->thread_id); // end the thread
-				SLIST_REMOVE(&head, datap, slist_data_t, entires); // remove the thread from the linked list
+				pthread_join(datap->thread_id, NULL); // end the thread
+				SLIST_REMOVE(&head, datap, slist_data_t, entries); // remove the thread from the linked list
 				free(datap); // free the memory for the node
 			}
 		}
