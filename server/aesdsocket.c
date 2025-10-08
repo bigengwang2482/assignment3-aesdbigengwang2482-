@@ -173,6 +173,7 @@ void* threadfunc(void* thread_param)
 	
 	// Label the thread complete
 	*(thread_func_args->complete)=true;
+		
     return thread_param;
 }
 
@@ -381,6 +382,7 @@ int main(int argc, char* argv[]) {
 		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send	
 		if (rc != 0) {
 			thrd_data->thread_complete_success=false;
+			exit(EXIT_FAILURE);
 		}	else {
 			thrd_data->thread_complete_success=true;
 		}	
@@ -389,11 +391,10 @@ int main(int argc, char* argv[]) {
 		// TODO: update this information in the thread status linked list
 		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
 		SLIST_FOREACH(datap, &head, entries) {
-			if (datap->complete) {
-				printf("Freeing thread ID: %ld\n", datap->thread_id);
-				pthread_join(datap->thread_id, NULL); // end the thread
+			if (datap->complete) {	
+				pthread_join(datap->thread_id, NULL); // end the thread	
 				SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
-				free(datap); // free the memory for the node
+				free(datap);
 			}
 		}
 		
