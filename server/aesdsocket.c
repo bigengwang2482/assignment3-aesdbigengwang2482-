@@ -220,7 +220,7 @@ void* timer_threadfunc(void* thread_param)
 		//	return 1;
 		//}	
 		strftime(timer_buffer, buffer_len, "%Y-%m-%d %H:%M:%S \n", current_time);
-		fprintf(file, "timestampe:%s",timer_buffer);
+		fprintf(file, "timestamp:%s",timer_buffer);
 		fclose(file);	
 		
 		pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
