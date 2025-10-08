@@ -208,29 +208,23 @@ void* timer_threadfunc(void* thread_param)
 	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
 
 	while (1) {		
-
+		sleep(TIME_STAMP_INTERVAL);
 		time_t now;
 		time(&now);
-
 		struct tm *current_time = localtime(&now);	
-
-		if ((now - *(thread_func_args->time_start)) == TIME_STAMP_INTERVAL) {
-			*(thread_func_args->time_start) = now;
-			pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
-				
-				
-			// write the packet to file
-			file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
-			//if (file == NULL) {
-			//	perror("fopen failed");
-			//	return 1;
-			//}	
-			strftime(timer_buffer, buffer_len, "%Y-%m-%d %H:%M:%S\n", current_time);
-			fprintf(file, "%s",timer_buffer);
-			fclose(file);	
-			
-			pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
-		}
+		pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work	
+		// write the packet to file
+		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
+		//if (file == NULL) {
+		//	perror("fopen failed");
+		//	return 1;
+		//}	
+		strftime(timer_buffer, buffer_len, "%Y-%m-%d %H:%M:%S \n", current_time);
+		fprintf(file, "timestampe:%s",timer_buffer);
+		fclose(file);	
+		
+		pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
+		
 	}
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
     return thread_param;
@@ -349,11 +343,11 @@ int main(int argc, char* argv[]) {
 	time(&time_start);
 	
 	// Set up thread_data
-	//struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct thread_data));	
-	//timer_thrd_data->mutex = &mutex;	
-	//timer_thrd_data->time_start = &time_start;	
-	//pthread_t timer_thread;
-	//pthread_create(&timer_thread, NULL, timer_threadfunc, timer_thrd_data); // start a timer thread
+	struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct thread_data));	
+	timer_thrd_data->mutex = &mutex;	
+	timer_thrd_data->time_start = &time_start;	
+	pthread_t timer_thread;
+	pthread_create(&timer_thread, NULL, timer_threadfunc, timer_thrd_data); // start a timer thread
 
 
 	while(1) {
