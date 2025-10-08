@@ -84,6 +84,8 @@ struct thread_data{
      */	
 	pthread_mutex_t *mutex;
 	int acceptedfd; 		
+	bool* complete;	
+
     /**
      * Set to true if the thread completed with success, false
      * if an error occurred.
@@ -128,10 +130,10 @@ void* threadfunc(void* thread_param)
 		line_break[1]='\0'; // Replace the breakline with null	
 		// write the packet to file
 		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
-		//if (file == NULL) {
-		//	perror("fopen failed");
-		//	return 1;
-		//}	
+		if (file == NULL) {
+			perror("fopen failed");
+			exit(1);
+		}	
 		fprintf(file, "%s",packet_head);
 		fclose(file);	
 	}	
@@ -141,13 +143,14 @@ void* threadfunc(void* thread_param)
 	file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
 	if (fseek(file,0, SEEK_END)	 != 0) {
 		fclose(file);
-		//return -1;
+		exit(1);
+
 	}
 	
 	long file_size = ftell(file);
 	if (file_size == -1) {
 		fclose(file);
-		//return -1;
+		exit(1);
 	}
 	buffer_len = file_size;
 	if (bytes_buffer != NULL) {	
@@ -166,7 +169,9 @@ void* threadfunc(void* thread_param)
 		bytes_buffer = NULL;	
 	}
 	//syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
+	
 	// Label the thread complete
+	*(thread_func_args->complete)=true;
     return thread_param;
 }
 
@@ -364,7 +369,7 @@ int main(int argc, char* argv[]) {
 		// Set up thread_data
 		struct thread_data* thrd_data = (struct thread_data*) malloc(sizeof(struct thread_data));
 		thrd_data->acceptedfd = acceptedfd;
-		 
+		thrd_data->complete = &(datap->complete); 
 		thrd_data->mutex = &mutex;
 		pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
