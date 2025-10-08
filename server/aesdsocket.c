@@ -370,7 +370,7 @@ int main(int argc, char* argv[]) {
 	time(&time_start);
 	
 	// Set up thread_data
-	struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct thread_data));	
+	struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct timer_thread_data));	
 	timer_thrd_data->mutex = &mutex;	
 	timer_thrd_data->time_start = &time_start;
 	timer_thrd_data->exit_threads = &exit_threads;		
