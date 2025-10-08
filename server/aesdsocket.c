@@ -245,8 +245,9 @@ void* timer_threadfunc(void* thread_param)
 		
 	}
 	free(timer_buffer);
+	free(thread_func_args);
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
-    return thread_param;
+    return NULL;
 }
 
 void signal_handler(int sig) {
