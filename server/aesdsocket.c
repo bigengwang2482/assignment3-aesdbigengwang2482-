@@ -15,7 +15,8 @@
 // create SLIST (singly-linked list)
 typedef struct slist_data_s slist_data_t;
 struct slist_data_s {
-	bool value;
+	pthread_t thread_id;
+	bool complete;
 	SLIST_ENTRY(slist_data_s) entries;
 }
 
@@ -35,7 +36,7 @@ slist_data_s* slist_create_head() {
 slist_data_s* slist_add_data(slist_data_t head, slist_data_t* datap) {
 	
 	datap = malloc(sizeof(slist_data_t));
-	datap->value = true;
+	datap->complete = true;
 	SLIST_INSERT_HEAD(&head, datap, entries);
 	return head;
 }
@@ -43,7 +44,7 @@ slist_data_s* slist_add_data(slist_data_t head, slist_data_t* datap) {
 
 bool check_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
 	SLIST_FOREACH(datap, &head, entries) {
-		if (datap->value == false) {
+		if (datap->complete == false) {
 			all_complete = false;
 		}
 	}
@@ -52,7 +53,7 @@ bool check_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_
 
 void free_any_completed_threads(slist_data_t* datap, slist_data_t* head, slist_data_t* entries) {	
 	SLIST_FOREACH(datap, &head, entries) {
-		if (datap->value == true) {	
+		if (datap->complete == true) {	
 			pthread_join(datap->thread_id); // end and free the completed thread and don't let them hang there
 			// Better alternative to detached thread
 		}
@@ -74,8 +75,7 @@ struct thread_data{
      * your thread implementation.
      */	
 	pthread_mutex_t *mutex;
-	int wait_to_obtain_ms; 
-	int wait_to_release_ms;
+	int acceptedfd; 		
     /**
      * Set to true if the thread completed with success, false
      * if an error occurred.
@@ -83,7 +83,7 @@ struct thread_data{
     bool thread_complete_success;
 };
 
-void* threadfunc(void* thread_param)
+void threadfunc(void* thread_param)
 {
 
     //// TODO: wait, obtain mutex, wait, release mutex as described by thread_data structure
@@ -100,14 +100,14 @@ void* threadfunc(void* thread_param)
 	//usleep(thread_func_args->wait_to_release_ms*1000);
 	//pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work 	
 	// TODO: Logs message to the syslog
-	syslog(LOG_DEBUG, "Accepted connection from %s", client_addr.sa_data);
+	//syslog(LOG_DEBUG, "Accepted connection from %s", client_addr.sa_data);
 	
 	// Once the connection is done, do recv and send using acceptedfd
 	// use /var/tmp/aesdsocketdata as the buffer	
 		
 	size_t buffer_len=100000;// 1000000000; too large	
 	bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
-	recv(acceptedfd, bytes_buffer, buffer_len, 0);	
+	recv(thread_func_args->acceptedfd, bytes_buffer, buffer_len, 0);	
 	
 	// Find the new line break
 	char* packet_head = bytes_buffer;
@@ -117,15 +117,10 @@ void* threadfunc(void* thread_param)
 	if (line_break != NULL) {
 		valid_packet = 1;	
 	}
-	if (valid_packet) {	
-		//size_t packet_size;
-		//packet_size = (line_break - packet_head) / sizeof(char) + 1;
-		//printf("Found breakline, Get packet_size %ld \n", packet_size);
-		line_break[1]='\0'; // Replace the breakline with null
-		//printf("Write %s to file \n", packet_head); 
+	if (valid_packet) {		
+		line_break[1]='\0'; // Replace the breakline with null	
 		// write the packet to file
-		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode
-	
+		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
 		if (file == NULL) {
 			perror("fopen failed");
 			return 1;
@@ -158,14 +153,14 @@ void* threadfunc(void* thread_param)
 	fclose(file);
 					
 	// Send the buffer to client
-	send(acceptedfd, bytes_buffer, buffer_len, 0);	
+	send(thread_func_args->acceptedfd, bytes_buffer, buffer_len, 0);	
 	if (bytes_buffer != NULL) {	
 		free(bytes_buffer);
 		bytes_buffer = NULL;	
 	}
-	syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
+	//syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
 	// Label the thread complete
-    return thread_param;
+    //return thread_param;
 }
 
 FILE* file;
@@ -183,12 +178,7 @@ void signal_handler(int sig) {
 }
 
 
-// Define the thread status linked list
 
-struct slist_thread_status {
-	bool avail;
-	SLIST_ENTRY(slist_thread_status) entries;	
-}
 
 
 int main(int argc, char* argv[]) {
@@ -273,7 +263,9 @@ int main(int argc, char* argv[]) {
 	// now start more threads for dealing with recv and send	
 
 	// Create a linked list of thread status
-
+	SLIST_HEAD(slisthead, slist_data_s) head;
+	SLIST_INIT(&head);
+	slist_data_t *datap=NULL;
 	// set a boolean for if all_threads_complete
 	bool any_thread_complete = false;
 
@@ -284,19 +276,22 @@ int main(int argc, char* argv[]) {
 			return -1;
 		}	
 		// Now a new connection has been set up
-		pthread_t thread;	
-		int rc = pthread_create(&thread, NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
+		// create a new list element to record the status
+		datap = malloc(sizeof(slist_data_t));
+		datap->complete=false; //initialize it to be not completed
+		SLIST_INSERT_HEAD(&head, datap, entries);
+		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
 		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
 	
 		// TODO: update this information in the thread status linked list
 		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
-		any_thread_complete = check_any_completed_threads();
-		
-		if (any_thread_complete) {
-			free_any_completed_threads();	
-		} else {
-			printf("Move on to create a new thread to accept more connections.");
+		SLIST_FOREACH_SAFE(datap, &head, entries) {
+			if (datap->complete) {
+				pthread_join(datap->thread_id); // end the thread
+				SLIST_REMOVE(&head, datap, slist_data_t, entires); // remove the thread from the linked list
+				free(datap); // free the memory for the node
+			}
 		}
 		
 	}	
