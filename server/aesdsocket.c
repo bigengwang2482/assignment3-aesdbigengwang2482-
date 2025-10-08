@@ -117,7 +117,10 @@ void* threadfunc(void* thread_param)
 	
 	// Once the connection is done, do recv and send using acceptedfd
 	// use /var/tmp/aesdsocketdata as the buffer	
-		
+			
+	// get the locked mutex from arg for unlock later
+	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
+	pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
 	size_t buffer_len=100000;// 1000000000; too large	
 	bytes_buffer = (char*) malloc(sizeof(char)*buffer_len);
 	recv(thread_func_args->acceptedfd, bytes_buffer, buffer_len, 0);	
@@ -130,9 +133,6 @@ void* threadfunc(void* thread_param)
 	if (line_break != NULL) {
 		valid_packet = 1;	
 	}
-	// get the locked mutex from arg for unlock later
-	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;	
-	pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
 	if (valid_packet) {		
 		line_break[1]='\0'; // Replace the breakline with null	
 		// write the packet to file
@@ -144,6 +144,10 @@ void* threadfunc(void* thread_param)
 		fprintf(file, "%s",packet_head);
 		fclose(file);	
 	}	
+	if (bytes_buffer != NULL) {	
+		free(bytes_buffer);
+		bytes_buffer = NULL;	
+	}
 	pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
 	
@@ -240,6 +244,7 @@ void* timer_threadfunc(void* thread_param)
 		pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
 		
 	}
+	free(timer_buffer);
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
     return thread_param;
 }
