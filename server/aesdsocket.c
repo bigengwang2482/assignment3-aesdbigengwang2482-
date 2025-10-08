@@ -245,6 +245,13 @@ void signal_handler(int sig) {
 		if (timer_buffer != NULL) {
 			free(timer_buffer);
 		}
+		SLIST_FOREACH(datap, &head, entries) {
+			if (datap->complete) {
+				pthread_join(datap->thread_id, NULL); // end the thread
+				SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
+				free(datap); // free the memory for the node
+			}
+		} 
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
