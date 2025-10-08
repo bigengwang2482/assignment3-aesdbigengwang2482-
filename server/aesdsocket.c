@@ -378,8 +378,12 @@ int main(int argc, char* argv[]) {
 		thrd_data->acceptedfd = acceptedfd;
 		thrd_data->complete = &(datap->complete); 
 		thrd_data->mutex = &mutex;
-		pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
-		
+		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send	
+		if (rc != 0) {
+			thrd_data->thread_complete_success=false;
+		}	else {
+			thrd_data->thread_complete_success=true;
+		}	
 		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
 	
 		// TODO: update this information in the thread status linked list
