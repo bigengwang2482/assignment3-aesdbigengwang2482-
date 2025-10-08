@@ -15,6 +15,10 @@
 #define NUM_THREADS 10
 #define TIME_STAMP_INTERVAL 10
 
+// Create a global quantity to indicate whether threads should exit
+sig_atomic_t exit_threads = 0;
+
+
 // create SLIST (singly-linked list)
 typedef struct slist_data_s slist_data_t;
 struct slist_data_s {
@@ -67,6 +71,7 @@ struct slist_data_s {
 FILE* file;
 char* bytes_buffer;
 char* timer_buffer;
+pthread_t timer_thread;
 slist_data_t *datap;
 SLIST_HEAD(slisthead, slist_data_s) head;
 // Thread function for recv and send, wrapped here
@@ -85,7 +90,8 @@ struct thread_data{
      */	
 	pthread_mutex_t *mutex;
 	int acceptedfd; 		
-	bool* complete;	
+	bool* complete;
+		
 
     /**
      * Set to true if the thread completed with success, false
@@ -186,7 +192,8 @@ struct timer_thread_data{
      * your thread implementation.
      */	
 	pthread_mutex_t *mutex;	
-	time_t* time_start; 
+	time_t* time_start;
+	sig_atomic_t* exit_threads; 
 };
 
 void* timer_threadfunc(void* thread_param)
@@ -214,7 +221,7 @@ void* timer_threadfunc(void* thread_param)
 	size_t buffer_len=1024;// 1000000000; too large	
 	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
 
-	while (1) {		
+	while (!*(thread_func_args->exit_threads)) {		
 		sleep(TIME_STAMP_INTERVAL);
 		time_t now;
 		time(&now);
@@ -240,6 +247,7 @@ void* timer_threadfunc(void* thread_param)
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
 		syslog(LOG_DEBUG, "Caught signal, exiting");
+		exit_threads = 1;	
 		if (bytes_buffer != NULL) {
 			free(bytes_buffer);
 		}	
@@ -253,6 +261,7 @@ void signal_handler(int sig) {
 				free(datap); // free the memory for the node
 			}
 		} 
+		pthread_join(timer_thread, NULL);
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
@@ -358,8 +367,8 @@ int main(int argc, char* argv[]) {
 	// Set up thread_data
 	struct timer_thread_data* timer_thrd_data = (struct timer_thread_data*) malloc(sizeof(struct thread_data));	
 	timer_thrd_data->mutex = &mutex;	
-	timer_thrd_data->time_start = &time_start;	
-	pthread_t timer_thread;
+	timer_thrd_data->time_start = &time_start;
+	timer_thrd_data->exit_threads = &exit_threads;		
 	pthread_create(&timer_thread, NULL, timer_threadfunc, timer_thrd_data); // start a timer thread
 
 
