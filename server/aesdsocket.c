@@ -13,6 +13,7 @@
 #include "queue.h"  // Use implemented linked list
 
 #define NUM_THREADS 10
+#define TIME_STAMP_INTERVAL 10
 
 // create SLIST (singly-linked list)
 typedef struct slist_data_s slist_data_t;
@@ -65,6 +66,7 @@ struct slist_data_s {
 // Global variables
 FILE* file;
 char* bytes_buffer;
+char* timer_buffer;
 
 // Thread function for recv and send, wrapped here
 /**
@@ -168,12 +170,80 @@ void* threadfunc(void* thread_param)
     return thread_param;
 }
 
+
+struct timer_thread_data{
+    /*
+     * TODO: add other values your thread will need to manage
+     * into this structure, use this structure to communicate
+     * between the start_thread_obtaining_mutex function and
+     * your thread implementation.
+     */	
+	pthread_mutex_t *mutex;	
+	time_t* time_start; 
+};
+
+void* timer_threadfunc(void* thread_param)
+{
+
+    //// TODO: wait, obtain mutex, wait, release mutex as described by thread_data structure
+    //// hint: use a cast like the one below to obtain thread arguments from your parameter
+    ////struct thread_data* thread_func_args = (struct thread_data *) thread_param;
+	struct timer_thread_data* thread_func_args = (struct timer_thread_data *) thread_param; // cast input thread_param pointer to a thread_data type
+	//usleep(thread_func_args->wait_to_obtain_ms*1000); //usleep is for micro second not milisecond	
+	////DEBUG_LOG("Waited %d ms BEFORE OBTAINING THE LOCKED MUTEX from arg. \n", thread_func_args->wait_to_obtain_ms);
+	//	
+	////	
+	//usleep(thread_func_args->wait_to_release_ms*1000); 	
+	// TODO: Logs message to the syslog
+	//syslog(LOG_DEBUG, "Accepted connection from %s", client_addr.sa_data);
+	
+	// Once the connection is done, do recv and send using acceptedfd
+	// use /var/tmp/aesdsocketdata as the buffer	
+	
+	// get the locked mutex from arg for lock later
+	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;
+
+	// start the part for recv and send
+	size_t buffer_len=1024;// 1000000000; too large	
+	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
+
+	while (1) {		
+
+		time_t now;
+		time(&now);
+
+		struct tm *current_time = localtime(&now);	
+
+		if ((now - *(thread_func_args->time_start)) > TIME_STAMP_INTERVAL) { 
+			pthread_mutex_lock(thrd_mutex); // perfrom mutex lock so other threads can't work
+				
+				
+			// write the packet to file
+			file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
+			//if (file == NULL) {
+			//	perror("fopen failed");
+			//	return 1;
+			//}	
+			strftime(timer_buffer, buffer_len, "%Y-%m-%d %H:%M:%S\n", current_time);
+			fprintf(file, "%s",timer_buffer);
+			fclose(file);	
+			
+			pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
+		}
+	}
+	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
+    return thread_param;
+}
+
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
 		syslog(LOG_DEBUG, "Caught signal, exiting");
 		if (bytes_buffer != NULL) {
 			free(bytes_buffer);
 		}	
+		if (timer_buffer != NULL) {
+			free(timer_buffer);
+		}
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
@@ -269,8 +339,9 @@ int main(int argc, char* argv[]) {
 	slist_data_t *datap=NULL;
 	SLIST_HEAD(slisthead, slist_data_s) head;
 	SLIST_INIT(&head);
-		
-
+	// Set up the mutex	
+	pthread_mutex_t mutex;
+	pthread_mutex_init(&mutex, NULL);
 	while(1) {
 		int acceptedfd; // TODO: return -1 if any of the connect steps fail
 		acceptedfd = accept(server_fd, &client_addr, &addrlen); // Use accpt_fd to read and write for our socket
@@ -285,8 +356,7 @@ int main(int argc, char* argv[]) {
 		// Set up thread_data
 		struct thread_data* thrd_data = (struct thread_data*) malloc(sizeof(struct thread_data));
 		thrd_data->acceptedfd = acceptedfd;
-		pthread_mutex_t mutex;
-		pthread_mutex_init(&mutex, NULL); 
+		 
 		thrd_data->mutex = &mutex;
 		pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send
 		
