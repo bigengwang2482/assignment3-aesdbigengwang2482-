@@ -183,8 +183,8 @@ void* threadfunc(void* thread_param)
 	
 	// Label the thread complete
 	*(thread_func_args->complete)=true;
-		
-    return thread_param;
+	free(thread_func_args);	
+    return NULL;
 }
 
 
@@ -395,12 +395,12 @@ int main(int argc, char* argv[]) {
 		thrd_data->exit_threads = &exit_threads;		
 		int rc = pthread_create(&(datap->thread_id), NULL, threadfunc, thrd_data); // start a new thread to do this recv and send	
 		if (rc != 0) {
-			thrd_data->thread_complete_success=false;
+			//thrd_data->thread_complete_success=false;
 			exit(EXIT_FAILURE);
 		}	else {
-			thrd_data->thread_complete_success=true;
+			//thrd_data->thread_complete_success=true;
 		}	
-		// required infomation are in thrd_data which are passed to the threadfunc as the arguement
+		//required infomation are in thrd_data which are passed to the threadfunc as the arguement
 	
 		// TODO: update this information in the thread status linked list
 		// From main thread, check if any existing thread is done with their work so that they can be freed by pthread_join(...)
