@@ -184,6 +184,10 @@ void* threadfunc(void* thread_param)
 	// Label the thread complete
 	*(thread_func_args->complete)=true;
 	free(thread_func_args);	
+	if (bytes_buffer != NULL) {	
+		free(bytes_buffer);
+		bytes_buffer = NULL;	
+	}	
     return NULL;
 }
 
@@ -257,14 +261,19 @@ void signal_handler(int sig) {
 		//if (timer_buffer != NULL) {
 		//	free(timer_buffer);
 		//}
-		SLIST_FOREACH(datap, &head, entries) {	
-			pthread_join(datap->thread_id, NULL); // end the thread
-			SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
-			free(datap); // free the memory for the node
-		} 
-		if (bytes_buffer != NULL) {
-			free(bytes_buffer);
+		while (!SLIST_EMPTY(&head)) {
+			datap = SLIST_FIRST(&head);
+			SLIST_REMOVE_HEAD(&head, entries);
+			free(datap);
 		}
+		//SLIST_FOREACH(datap, &head, entries) {	
+		//	pthread_join(datap->thread_id, NULL); // end the thread
+		//	SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
+		//	//free(datap); // free the memory for the node
+		//} 
+		//if (bytes_buffer != NULL) {
+		//	free(bytes_buffer);
+		//}
 		pthread_join(timer_thread, NULL);
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
