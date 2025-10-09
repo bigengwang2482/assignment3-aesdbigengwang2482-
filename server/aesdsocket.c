@@ -264,6 +264,10 @@ void signal_handler(int sig) {
 		//if (timer_buffer != NULL) {
 		//	free(timer_buffer);
 		//}
+
+		SLIST_FOREACH(datap, &head, entries) {
+			pthread_join(datap->thread_id, NULL); // end the thread
+		}
 		while (!SLIST_EMPTY(&head)) {
 			datap = SLIST_FIRST(&head);
 			SLIST_REMOVE_HEAD(&head, entries);
