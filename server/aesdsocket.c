@@ -253,10 +253,7 @@ void* timer_threadfunc(void* thread_param)
 void signal_handler(int sig) {
 	if ((sig == SIGINT) || (sig == SIGTERM) ) {
 		syslog(LOG_DEBUG, "Caught signal, exiting");
-		exit_threads = 1;	
-		if (bytes_buffer != NULL) {
-			free(bytes_buffer);
-		}	
+		exit_threads = 1;		
 		//if (timer_buffer != NULL) {
 		//	free(timer_buffer);
 		//}
@@ -265,6 +262,9 @@ void signal_handler(int sig) {
 			SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
 			free(datap); // free the memory for the node
 		} 
+		if (bytes_buffer != NULL) {
+			free(bytes_buffer);
+		}
 		pthread_join(timer_thread, NULL);
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
