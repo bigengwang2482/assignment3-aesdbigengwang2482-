@@ -222,7 +222,7 @@ void* timer_threadfunc(void* thread_param)
 	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;
 
 	// start the part for recv and send
-	size_t buffer_len=1024;// 1000000000; too large	
+	size_t buffer_len=10240;// 1000000000; too large	
 	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
 
 	while (!*(thread_func_args->exit_threads)) {		
@@ -257,9 +257,9 @@ void signal_handler(int sig) {
 		if (bytes_buffer != NULL) {
 			free(bytes_buffer);
 		}	
-		if (timer_buffer != NULL) {
-			free(timer_buffer);
-		}
+		//if (timer_buffer != NULL) {
+		//	free(timer_buffer);
+		//}
 		SLIST_FOREACH(datap, &head, entries) {	
 			pthread_join(datap->thread_id, NULL); // end the thread
 			SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
