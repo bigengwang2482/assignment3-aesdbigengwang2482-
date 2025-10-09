@@ -180,15 +180,14 @@ void* threadfunc(void* thread_param)
 		bytes_buffer = NULL;	
 	}
 	//syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
-	
-	
-	free(thread_func_args);	
+		
 	if (bytes_buffer != NULL) {	
 		free(bytes_buffer);
 		bytes_buffer = NULL;	
 	}	
 	// Label the thread complete
 	*(thread_func_args->complete)=true;
+	free(thread_func_args);
     return NULL;
 }
 
