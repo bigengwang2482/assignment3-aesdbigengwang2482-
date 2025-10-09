@@ -407,8 +407,8 @@ int main(int argc, char* argv[]) {
 		SLIST_FOREACH(datap, &head, entries) {
 			if (datap->complete) {	
 				pthread_join(datap->thread_id, NULL); // end the thread	
-				SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
-				free(datap);
+				//SLIST_REMOVE(&head, datap, slist_data_s, entries); // remove the thread from the linked list
+				//free(datap);
 			}
 		}
 		
