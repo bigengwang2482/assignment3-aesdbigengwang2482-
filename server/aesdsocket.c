@@ -139,7 +139,7 @@ void* threadfunc(void* thread_param)
 		file = fopen("/var/tmp/aesdsocketdata", "a+");// use append mode	
 		if (file == NULL) {
 			perror("fopen failed");
-			exit(1);
+			return NULL;
 		}	
 		fprintf(file, "%s",packet_head);
 		fclose(file);	
@@ -154,14 +154,14 @@ void* threadfunc(void* thread_param)
 	file = fopen("/var/tmp/aesdsocketdata", "rb");// use append mode	
 	if (fseek(file,0, SEEK_END)	 != 0) {
 		fclose(file);
-		exit(1);
+		return NULL;
 
 	}
 	
 	long file_size = ftell(file);
 	if (file_size == -1) {
 		fclose(file);
-		exit(1);
+		return NULL;
 	}
 	buffer_len = file_size;
 	if (bytes_buffer != NULL) {	
@@ -181,13 +181,14 @@ void* threadfunc(void* thread_param)
 	}
 	//syslog(LOG_DEBUG, "Closed connection from %s", client_addr.sa_data);
 	
-	// Label the thread complete
-	*(thread_func_args->complete)=true;
+	
 	free(thread_func_args);	
 	if (bytes_buffer != NULL) {	
 		free(bytes_buffer);
 		bytes_buffer = NULL;	
 	}	
+	// Label the thread complete
+	*(thread_func_args->complete)=true;
     return NULL;
 }
 
