@@ -264,7 +264,7 @@ void signal_handler(int sig) {
 		//if (timer_buffer != NULL) {
 		//	free(timer_buffer);
 		//}
-
+		pthread_join(timer_thread, NULL);
 		SLIST_FOREACH(datap, &head, entries) {
 			pthread_join(datap->thread_id, NULL); // end the thread
 		}
@@ -281,7 +281,7 @@ void signal_handler(int sig) {
 		//if (bytes_buffer != NULL) {
 		//	free(bytes_buffer);
 		//}
-		pthread_join(timer_thread, NULL);
+		
 		remove("/var/tmp/aesdsocketdata");	
 		exit(0);
 	}
