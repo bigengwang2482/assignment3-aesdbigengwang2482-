@@ -222,7 +222,7 @@ void* timer_threadfunc(void* thread_param)
 	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;
 
 	// start the part for recv and send
-	size_t buffer_len=10240;// 1000000000; too large	
+	size_t buffer_len=102400;// 1000000000; too large	
 	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
 
 	while (!*(thread_func_args->exit_threads)) {		
