@@ -226,7 +226,9 @@ void* timer_threadfunc(void* thread_param)
 	pthread_mutex_t* thrd_mutex = thread_func_args->mutex;
 
 	// start the part for recv and send
-	
+	size_t buffer_len=102400;// 1000000000; too large	
+	timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
+
 	time_t start = time(NULL);
 	while (!*(thread_func_args->exit_threads)) {		
 			//sleep(TIME_STAMP_INTERVAL);
@@ -242,16 +244,14 @@ void* timer_threadfunc(void* thread_param)
 			//	perror("fopen failed");
 			//	return 1;
 			//}	
-			size_t buffer_len=102400;// 1000000000; too large	
-			timer_buffer = (char*) malloc(sizeof(char)*buffer_len);
 			strftime(timer_buffer, buffer_len, "%Y-%m-%d %H:%M:%S \n", current_time);
 			fprintf(file, "timestamp:%s",timer_buffer);
-			fclose(file);	
-			free(timer_buffer);
+			fclose(file);		
 			pthread_mutex_unlock(thrd_mutex); // release mutex lock so other threads may work
 		}
 		
 	}	
+	free(timer_buffer);
 	free(thread_func_args);
 	// Load full content of /var/tmp/aesdsocketdata to client, and send back to client
     return NULL;
