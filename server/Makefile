@@ -5,15 +5,17 @@
 CROSS_COMPILE?=
 
 ifeq ($(CROSS_COMPILE),)
-	CC=gcc
+	CC ?= gcc
 else
-	CC=$(CROSS_COMPILE)gcc
+	CC ?= $(CROSS_COMPILE)gcc
 endif
 
-CFLAGS=-Wall -Werror
+CFLAGS ?= -g -Wall -Werror
+
+LDFLAGS ?= -lpthread -lrt
 
 # Target executable
-TARGET=aesdsocket
+TARGET ?= aesdsocket
 
 # Source files
 SOURCES=aesdsocket.c
@@ -28,7 +30,7 @@ all: $(TARGET)
 # Basic compile and link
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(CLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $^ -o $@  $(INCLUDES) $(LDFLAGS)
 
 
 # Compile
